@@ -1,4 +1,4 @@
-const CACHE='yohaku-shell-95deaaace6183080';
+const CACHE='yohaku-shell-7bc5bf7fa01c0ec8';
 const SHELL=['./','./index.html','./deployment.js','./style.css','./core.js','./drive.js','./progress.js','./app.js','./ai-ui.js','./mobile.js','./icon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./manifest.webmanifest'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('yohaku-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
