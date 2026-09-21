@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#244c42"><meta name="apple-mobile-web-app-capable" content="yes">
+  <title>余白 | 読む、聴く、書きとめる。</title>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+  <script src="deployment.js" defer></script><script src="core.js" defer></script><script src="drive.js" defer></script><script src="progress.js" defer></script><script src="app.js" defer></script><script src="ai-ui.js" defer></script><script src="mobile.js" defer></script>
+</head>
+<body>
+<div class="layout">
+  <aside id="library" class="library">
+<header class="topbar">
+  <button id="libraryToggle" class="brand" aria-label="本棚を開閉"><span class="brandMark">余</span><span>余白<small>YOHAKU READER</small></span></button>
+  <div class="topTitle"><span id="bookTitle">読む時間に、余白を。</span><small id="bookSubtitle">あなたの本と、気づきをひとつに。</small></div>
+  <span id="saveStatus" class="status" role="status">起動中</span>
+  <button id="settingsButton" class="iconButton" title="設定">設定</button>
+  <button id="notebookToggle" class="tool" aria-label="ノートを開閉">ノート</button>
+</header>
+    <div id="pcConnectionHelp" class="connectionHelp" hidden><strong>PC側の余白に未接続です</strong><p>ブラウザの画面だけが残っています。読書アプリのフォルダにある「余白を起動.vbs」を開いてください。起動後は自動で再接続します。</p><button id="reconnectPC" class="subtle wide">PCへ再接続</button></div>
+    <section class="shelfSection">
+    <div class="sectionTitle"><h2>本棚</h2><span id="bookCount">0 BOOKS</span></div>
+    <button id="importButton" class="primary wide">＋ PDFを追加</button>
+    <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+    <button id="restoreButton" class="subtle wide">持ち出し・バックアップを開く</button>
+    <button id="driveShelfButton" class="subtle wide">Google Drive・端末への保存</button>
+    <input id="packInput" type="file" accept=".yohaku,application/json,.json" multiple hidden>
+    <div id="bookList" class="bookList"></div>
+    </section>
+    <section id="readingControls" class="readingControls" aria-label="ページと朗読の操作" hidden>
+      <h2 class="controlsHeading">ページの操作</h2>
+      <button id="editPageShortcut" class="subtle wide">このページの文章を修正</button>
+      <button id="openIssuesShortcut" class="subtle wide">未処理・失敗ページを確認</button>
+      <div class="readerToolbar">
+        <div class="toolGroup" role="group" aria-label="注釈ツール">
+          <button data-tool="read" class="tool active" title="閲覧・文字選択">閲覧</button>
+          <button data-tool="highlight" class="tool" title="ドラッグして範囲にマーカー">マーカー</button>
+          <button data-tool="ink" class="tool" title="手書き">ペン</button>
+          <button data-tool="erase" class="tool" title="クリックした注釈を消す">消しゴム</button>
+          <button id="undoButton" class="tool" title="このページの最後の注釈を取り消す">↶</button>
+        </div>
+        <div class="toolGroup">
+          <input type="color" id="inkColor" value="#d9b947" title="注釈の色" aria-label="注釈の色">
+          <button id="questionButton" class="tool" title="このページに疑問を残す">？</button>
+          <select id="zoom" aria-label="表示倍率"><option value="page" selected>ページ全体</option><option value="fit">幅に合わせる</option><option value="height">高さに合わせる</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="100">100%</option><option value="150">150%</option><option value="200">200%</option><option value="custom" hidden>指定倍率</option></select>
+          <button id="zoomOut" class="tool" aria-label="縮小" title="10ポイント縮小">−</button>
+          <label class="zoomPercent"><input id="zoomPercent" type="number" min="10" max="400" step="0.1" value="100" aria-label="倍率を数値で指定" title="10〜400%。100%はページ画像のピクセル寸法です。">%</label>
+          <button id="zoomIn" class="tool" aria-label="拡大" title="10ポイント拡大">＋</button>
+        </div>
+      </div>
+      <div class="pageNav"><button id="prevPage" aria-label="前のページ">←</button><label><input id="pageNumber" type="number" min="1" value="1" aria-label="ページ番号"> <span id="pageTotal">/ 0</span></label><button id="nextPage" aria-label="次のページ">→</button><span id="readingPercent">0%</span></div>
+      <div class="audioBar">
+        <button id="playButton" class="playButton" title="VOICEPEAKで朗読">▶</button>
+        <div class="audioInfo"><strong id="audioStatus">VOICEPEAKで聴く</strong><small id="audioDetail">ページごとに音声を準備します</small></div>
+        <button id="repeatButton" class="tool" title="朗読ページの先頭から再生">↺</button>
+        <select id="playbackRate" aria-label="再生速度"><option value="0.75">0.75×</option><option value="1" selected>1.0×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2.0×</option></select>
+        <label class="followLabel"><input type="checkbox" id="followAudio" checked> 自動でめくる</label>
+        <button id="audioPageButton" class="textButton" title="朗読中のページへ戻る">朗読位置</button>
+      </div>
+      <audio id="narration" preload="auto"></audio>
+    </section>
+    <div id="connectionStatus" class="connection">PCへの接続を確認中</div>
+  </aside>
+  <main class="reader">
+    <section id="welcome" class="welcome">
+      <div class="welcomeArt" aria-hidden="true"><div class="bookShape"><span>余白</span><i>READ · LISTEN · NOTE</i></div><div class="artLine"></div></div>
+      <h1>本のそばに、<br>あなたの気づきを。</h1>
+      <p>スクショPDFを読みながら、<br>音声を聴いて、メモを残せます。</p>
+      <button id="welcomeImport" class="primary">最初のPDFを開く <span>↗</span></button>
+      <button id="demoButton" class="textButton">使い方のサンプルを開く</button>
+      <small>原本のPDFは変更しません。注釈は別に保存します。</small>
+    </section>
+    <section id="readingView" hidden>
+      <div id="pageScroll" class="pageScroll">
+        <div id="paper" class="paper">
+          <img id="pageImage" alt="PDFのページ" draggable="false">
+          <div id="textLayer" class="textLayer"></div>
+          <svg id="annotationLayer" class="annotationLayer" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-label="ページの注釈"></svg>
+        </div>
+      </div>
+    </section>
+  </main>
+  <aside id="notebook" class="notebook">
+    <div class="notebookHeading"><button id="closeNotebook" class="textButton" style="float:right" aria-label="ノートを閉じる">閉じる ×</button><h2>読書ノート <span id="notePageLabel"></span></h2></div>
+    <nav class="tabs" aria-label="サイドパネル"><button data-tab="notes" class="active">メモ</button><button data-tab="ocr">OCR・質問</button><button data-tab="search">検索</button></nav>
+    <section id="backgroundPanel" class="preparationProgress" aria-label="本の準備状況" hidden>
+      <strong id="backgroundLabel" role="status"></strong>
+      <div class="progressNumbers"><span id="backgroundCount"></span><span id="backgroundPercent"></span></div>
+      <progress id="backgroundBar" max="100" aria-label="保存済みページの完成率"></progress>
+      <p id="backgroundCounts"></p><p id="backgroundActivity"></p>
+      <div class="progressTime">経過時間 <strong id="backgroundElapsed"></strong><span>約2秒ごとに更新</span></div>
+      <div class="noteActions"><button id="cancelPrepare" class="subtle">準備を中断</button><button id="resumePrepare" class="primary">保存済みから再開</button></div>
+      <details id="backgroundDetails"><summary id="backgroundDetailsLabel">処理の詳細</summary><p id="backgroundDetail" class="hint"></p><div id="backgroundErrors"></div><button id="progressIssues" class="subtle wide">未完成のページを確認・修正</button></details>
+    </section>
+    <section id="notesPanel" class="panel">
+      <label class="fieldLabel" for="noteInput">このページの気づき</label>
+      <textarea id="noteInput" rows="5" placeholder="心に留まったこと、自分ならどう使うか。短い言葉でも。"></textarea>
+      <div class="noteActions"><button id="recordButton" class="subtle">● 音声メモ</button><button id="saveNote" class="primary">保存</button></div>
+      <div id="recordStatus" class="hint" role="status"></div>
+      <div class="divider"></div>
+      <div class="sectionTitle"><h3>残した記録</h3><select id="noteFilter" aria-label="記録の絞り込み"><option value="page">このページ</option><option value="all">本全体</option><option value="question">？だけ</option><option value="highlight">マーカーだけ</option></select></div>
+      <div id="notesList" class="notesList"><p class="emptyHint">本を開くと、ここに記録が並びます。</p></div>
+      <button id="exportMarkdown" class="subtle wide">Markdownに書き出す ↗</button>
+    </section>
+    <section id="ocrPanel" class="panel" hidden>
+      <div class="sectionTitle"><h3>ページのテキスト</h3><span id="ocrSource" class="tag">未OCR</span></div>
+      <p class="hint">文字を選択 → 右クリックで質問。読み間違いは修正して保存できます。</p>
+      <select id="ocrMode" aria-label="OCRの文字方向"><option value="horizontal">横書き</option><option value="vertical">縦書き</option></select>
+      <button id="ocrButton" class="subtle">このページのOCRをやり直す</button>
+      <p class="hint">下の文章を直接直し「修正を保存」を押してください。原本・元OCRは残ります。保存後は「このページの音声を更新」で修正文を朗読に反映できます。</p>
+      <details class="aiBox"><summary>AIで修正候補を作る・確認する</summary>
+        <strong>ローカルAIで原本に近づける</strong>
+        <label>AI<select id="pageAiModel"><option value="gemma4:12b">Gemma 4 12B（本文向け）</option><option value="qwen3.5:9b-q8_0">Qwen3.5 9B</option></select></label>
+        <label>このページの読み方<select id="pageAiMethod"><option value="assisted">原本画像＋OCR（標準）</option><option value="image">画像だけで読み直す</option><option value="manga">マンガ・吹き出し（試験）</option></select></label>
+        <div class="noteActions"><button id="correctAI" class="primary">このページをAI校正</button><button id="openReview" class="subtle">修正をまとめて確認</button></div>
+        <p id="aiPageStatus" class="hint" role="status">元OCR・AI候補・確認済み文章は別に保存します。</p>
+        <label>朗読モード<select id="listenMode"><option value="reviewed">確認した文章だけ聴く</option><option value="instant">未確認でもすぐ聴く</option></select></label>
+        <button id="instantPlay" class="subtle wide">未確認でもすぐ聴く ▶</button>
+      </details>
+      <textarea id="ocrText" rows="13" placeholder="OCRするとテキストが表示されます。スクショの文字選択にも使います。"></textarea>
+      <div class="noteActions"><button id="ocrOriginal" class="textButton">元のOCRを確認</button><button id="saveOcr" class="primary">修正を保存</button></div>
+      <button id="updatePageAudio" class="subtle wide">このページの音声を更新</button>
+      <button id="openIssues" class="subtle wide">未処理・失敗ページを確認</button>
+      <button id="propagateEdit" class="textButton wide">同じ誤りを後続ページから探して修正</button>
+      <details><summary>現在のAI候補（手修正は上書きしません）</summary><pre id="candidateText" class="candidateText"></pre><button id="useCandidate" class="subtle">候補を編集欄へコピー</button></details>
+      <div class="divider"></div>
+      <h3>選んだ言葉を、聞いてみる</h3>
+      <p class="hint">質問文をコピーしてブラウザ版を開きます。貼り付けて、ご自身で送信してください。AI APIは使いません。</p>
+      <select id="questionStyle" aria-label="質問の種類"><option value="simple">やさしく説明</option><option value="example">具体例を教えて</option><option value="context">この文脈での意味</option></select>
+      <label class="hint"><input type="checkbox" id="includeContext"> 前後の短い文章も質問文に含める</label>
+      <div class="aiButtons"><button data-ai="chatgpt" class="subtle">ChatGPT ↗</button><button data-ai="gemini" class="subtle">Gemini ↗</button></div>
+      <div class="divider"></div>
+      <button id="prepareButton" class="subtle wide">本をまとめて準備（AI・音声・持ち出し）</button>
+      <button id="checkPortable" class="subtle wide">持ち出しの準備状況を確認</button><p id="portableStatus" class="hint" role="status"></p>
+      <label class="hint">持ち出す音声<select id="exportAudioMode"><option value="saved">保存済みをすべて含める（以前の読み方・声を含む）</option><option value="current">現在の文章・読み方・声に合う音声だけ</option></select></label>
+      <button id="exportPack" class="subtle wide">持ち出し用ファイルをPCへ書き出す</button>
+      <p class="hint">PCのexportsフォルダに保存します。大きい本は自動で分割します。Google Driveへは別の保存操作が必要です。</p>
+      <div id="exportResult" class="aiBox" hidden><strong>PCへの書き出し結果</strong><p id="exportLocation" class="hint" style="overflow-wrap:anywhere;white-space:pre-wrap"></p><button id="openExportFolder" class="subtle">保存先フォルダを開く</button></div>
+      <button id="backupNotes" class="textButton wide">メモだけバックアップ</button>
+    </section>
+    <section id="searchPanel" class="panel" hidden>
+      <h3>本の中を探す</h3><input id="searchInput" type="search" placeholder="言葉やフレーズを検索" aria-label="OCR全文検索"><p class="hint">OCR済みのページが対象です。検索結果を押すとページへ移動します。</p><div id="searchResults"></div>
+    </section>
+  </aside>
+</div>
+<div id="contextMenu" class="contextMenu" hidden><small>選んだ言葉を質問する</small><button data-ai="chatgpt">ChatGPTに聞く ↗</button><button data-ai="gemini">Geminiに聞く ↗</button><button id="selectionHighlight">選択した文字をメモに残す</button></div>
+<dialog id="settingsDialog">
+  <form method="dialog" class="dialogHeader"><h2>読書の設定</h2><button aria-label="設定を閉じる">×</button></form>
+  <div class="dialogBody">
+    <h3>朗読</h3><div class="settingsGrid"><label>声<select id="narrator"><option value="Japanese Female 1">女性1</option><option value="Japanese Female 2">女性2</option><option value="Japanese Female 3">女性3</option><option value="Japanese Male 1">男性1</option><option value="Japanese Male 2">男性2</option><option value="Japanese Male 3">男性3</option><option value="Japanese Female Child">女の子</option></select></label><label>音声生成時の話速（50〜200）<input id="voiceSpeed" type="number" min="50" max="200" value="100"></label><label>ページ送りの待ち時間（秒）<input id="pageDelay" type="number" min="0" max="30" step="0.5" value="1"></label></div>
+    <button id="previewVoice" class="subtle">選んだ声を試聴</button><audio id="voicePreview" controls hidden></audio>
+    <h3>ローカルAI</h3><label><input id="aiEnabled" type="checkbox" checked> 朗読・一冊の準備にAI校正を使う</label><p id="aiEngineStatus" class="hint">接続を確認中</p>
+    <p class="hint">AIの選択・朗読モードは「OCR・質問」で変更できます。書籍はクラウドAIに送信しません。</p>
+    <p class="hint">声・生成速度・辞書の変更後はPCで再生成します。再生速度はスマホでも変更できます。</p>
+    <h3>読み方辞書</h3><p class="hint">1行に「単語=よみがな」。OCR原文は変えず、朗読にだけ使います。</p><textarea id="dictionary" rows="4" placeholder="VOICEPEAK=ボイスピーク"></textarea>
+    <details><summary>PCの実行ファイル</summary><label>VOICEPEAK<input id="voicepeakPath"></label><label>Tesseract<input id="tesseractPath"></label><label>ローカル音声認識モデルのフォルダ<input id="whisperPath"></label><p id="engineStatus" class="hint"></p></details>
+    <button id="saveSettings" class="primary">設定を保存</button>
+    <div class="divider"></div>
+    <h3>スマホ・PCの同期 <span class="tag">Google Drive</span></h3>
+    <p class="hint">接続後、起動中・オンライン時にメモを30秒ごとに同期します。初回はGoogleのOAuthクライアントIDと、スマホ版を置くHTTPS URLの設定が必要です。AIのAPI契約は不要です。</p>
+    <label>Google OAuth クライアントID<input id="googleClientId" placeholder="…apps.googleusercontent.com" autocomplete="off"></label>
+    <div class="noteActions"><button id="connectDrive" class="subtle">Googleに接続</button><button id="syncNow" class="subtle">今すぐ同期</button><button id="disconnectDrive" class="textButton">接続解除</button></div>
+    <p id="driveStatus" class="hint" role="status">未接続。メモはこの端末に保存されます。</p>
+    <button id="uploadBook" class="subtle wide">開いている本をDriveへ持ち出し保存</button><button id="cloudLibraryButton" class="subtle wide">Driveの持ち出し本を表示</button><div id="cloudLibrary"></div>
+    <p class="hint">元のDrive書籍フォルダは変更しません。アプリ専用領域を使います。期限切れ時は再接続が必要です。</p>
+  </div>
+</dialog>
+<dialog id="prepareDialog"><form method="dialog" class="dialogHeader"><h2>本の準備</h2><button aria-label="閉じる">×</button></form><div class="dialogBody"><p>最初から全音声を待つ必要はありません。まずOCRだけで読み始め、必要なページを修正・朗読できます。</p><label>準備する内容<select id="preparePreset"><option value="ocr">まず読む：OCRだけ（AI校正・音声なし）</option><option value="text">文章を整える：OCR＋AI校正（音声なし）</option><option value="sample">まず10ページ：OCR＋AI校正＋音声</option><option value="full">指定範囲を全部：OCR＋AI校正＋音声</option><option value="custom">自分で選ぶ</option></select></label><div class="settingsGrid"><label>開始ページ<input id="prepareStart" type="number" value="1" min="1"></label><label>終了ページ<input id="prepareEnd" type="number" min="1"></label></div><label><input id="prepareAI" type="checkbox"> 選択したローカルAIで校正する</label><label><input type="checkbox" id="prepareAudio"> VOICEPEAKの朗読音声も生成する</label><label>音声を作る文章<select id="prepareListenMode"><option value="instant">保存されている文章から生成（未確認を含む）</option><option value="reviewed">確認済みページだけ生成する</option></select></label><p id="prepareSummary" class="hint"></p><p class="hint">既存の修正・確認済み文章を優先します。全ページのAI校正とVOICEPEAK生成は時間がかかります。生成速度と再生速度は別です。</p><button id="startPrepare" class="primary">選んだ内容で準備を開始</button></div></dialog>
+<dialog id="issuesDialog" class="wideDialog"><form method="dialog" class="dialogHeader"><h2>未処理・失敗ページ</h2><button aria-label="問題ページ一覧を閉じる">×</button></form><div class="dialogBody"><p class="hint">「要確認」は誤りの可能性であり、失敗確定ではありません。ページを開いて原本と文章を比べて修正できます。成功済みの結果は残します。</p><button id="refreshIssues" class="subtle">一覧を更新</button><p id="issuesSummary" class="hint"></p><div id="issuesList"></div><label>選んだページを再処理<select id="retryStage"><option value="ocr">OCRをやり直す（手修正文は保持）</option><option value="ai">AI校正を再試行（確認済みは保持）</option><option value="audio">音声の不足・設定違いを再生成（AIは実行しない）</option></select></label><button id="retryIssues" class="primary">選んだページだけ再処理</button></div></dialog>
+<dialog id="reviewDialog" class="wideDialog"><form method="dialog" class="dialogHeader"><h2>原本とAI修正を確認</h2><button aria-label="確認を閉じる">×</button></form><div class="dialogBody"><p>原本を見て確認したページにチェックしてください。手修正・確認済みの文章は一括承認で上書きしません。</p><div class="settingsGrid"><label>開始ページ<input id="reviewStart" type="number" min="1" value="1"></label><label>終了ページ<input id="reviewEnd" type="number" min="1" value="10"></label></div><button id="refreshReview" class="subtle">この範囲を表示</button><div id="reviewList"></div><button id="approveSelected" class="primary">チェックしたページを確認済みにする</button></div></dialog>
+<dialog id="replaceDialog" class="wideDialog"><form method="dialog" class="dialogHeader"><h2>後続ページの同じ誤りを修正</h2><button aria-label="置換を閉じる">×</button></form><div class="dialogBody"><p>読み取り済みのページだけが対象です。原本を確認し、直すページにチェックしてください。修正前の文章は履歴に残します。</p><div class="settingsGrid"><label>誤った文字<input id="replaceBefore"></label><label>正しい文字<input id="replaceAfter"></label><label>開始ページ<input id="replaceStart" type="number" min="1"></label></div><button id="previewReplace" class="subtle">候補を探す</button><div id="replaceList"></div><button id="applyReplace" class="primary">選んだページだけ修正</button></div></dialog>
+<dialog id="driveDialog"><form method="dialog" class="dialogHeader"><h2>Driveから１冊を端末へ</h2><button aria-label="閉じる">×</button></form><div class="dialogBody">
+  <p>PCで用意した本を、この端末に保存します。保存完了後はネットなしで読めます。音声はPCで生成済みの分を取得します。</p>
+  <p class="hint">保存先は、ご自身のGoogle Driveの<strong>余白専用領域</strong>です。通常の「マイドライブ」には表示されません。書籍はGitHubには送信しません。</p>
+  <p id="mobileDriveStatus" role="status">Google未接続</p>
+  <div class="noteActions"><button id="mobileConnectDrive" class="primary">Googleに接続</button><button id="mobileSync" class="subtle">メモを同期</button></div>
+  <button id="mobileUpload" class="subtle wide">この本をDriveへ保存・更新（PC）</button>
+  <button id="mobileListBooks" class="subtle wide">Driveの本を表示・更新</button>
+  <div id="mobileCloudBooks"></div>
+  <p id="deviceStorage" class="hint"></p>
+  <p id="offlineShellStatus" class="hint" role="status"></p>
+  <button id="cancelTransfer" class="subtle" hidden>転送を中断（保存済みは残す）</button>
+  <details><summary>iPhone・Androidでの使い方</summary><p>iPhoneはSafariでこのURLを開き、共有 →「ホーム画面に追加」。AndroidはChromeのメニュー →「ホーム画面に追加／アプリをインストール」を選びます。</p><p>追加した余白を開いてからGoogleに接続し、本を取得してください。ブラウザとホーム画面版で保存領域が別になる場合があります。出かける前に機内モードで本と音声を確認してください。</p><p>取得中はこの画面を開いたままにしてください。画面を閉じたり接続が切れた場合は、同じ本の取得ボタンで保存済みページから続行できます。端末の空き容量不足やブラウザのデータ削除で本が消えることがあります。未同期メモを残さず、定期的に同期してください。</p></details>
+  <button id="driveSettings" class="textButton">Google連携の初期設定・接続解除</button>
+</div></dialog>
+<nav id="mobileReaderBar" aria-label="読書操作" hidden><button id="mobileShelf">本棚</button><button id="mobilePrev" aria-label="前のページ">←</button><span id="mobilePageCount">—</span><button id="mobileNext" aria-label="次のページ">→</button><button id="mobilePlay" aria-label="朗読の再生・一時停止">▶</button><button id="mobileNotes">メモ</button></nav>
+<div id="taskProgress" class="taskProgress" hidden><strong id="taskLabel">準備中</strong><progress id="taskBar" max="100" value="0"></progress></div>
+<div id="toast" class="toast" role="status" hidden></div>
+</body></html>
