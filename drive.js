@@ -14,7 +14,7 @@
         await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=resolve;s.onerror=()=>reject(new Error('Googleへの接続に失敗しました'));document.head.append(s);});
       }
       await new Promise((resolve,reject)=>{
-        const client=google.accounts.oauth2.initTokenClient({client_id:clientId,scope:SCOPE,
+        const client=google.accounts.oauth2.initTokenClient({client_id:clientId,scope:SCOPE,include_granted_scopes:false,
           callback:r=>{if(r.error)return reject(new Error(r.error_description||r.error));
             if(!google.accounts.oauth2.hasGrantedAllScopes(r,SCOPE))return reject(new Error('Driveへの連携許可が必要です'));
             this.token=r.access_token;this.expires=Date.now()+Math.max(0,Number(r.expires_in)-60)*1000;resolve();},
